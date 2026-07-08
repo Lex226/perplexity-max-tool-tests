@@ -4,17 +4,1726 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Perplexity Max — Tool Tests</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300..700&family=Geist:wght@300..700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 <style>
-body { font-family: monospace; background: #0f0f0e; color: #d4d4d0; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-.msg { text-align: center; }
-a { color: #3ecdc5; }
+/* ═══════════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════════ */
+:root, [data-theme="light"] {
+  --color-bg:              #f5f5f0;
+  --color-surface:         #f9f9f6;
+  --color-surface-2:       #fcfcfa;
+  --color-surface-offset:  #ebebE5;
+  --color-surface-dynamic: #e0e0d8;
+  --color-divider:         #d8d8d0;
+  --color-border:          #ccccC3;
+  --color-text:            #1a1a18;
+  --color-text-muted:      #6e6e68;
+  --color-text-faint:      #b0b0a8;
+  --color-text-inverse:    #f5f5f0;
+
+  /* Perplexity teal as accent */
+  --color-primary:         #20b2aa;
+  --color-primary-hover:   #158a84;
+  --color-primary-active:  #0e6b66;
+  --color-primary-highlight: #d0ecea;
+  --color-primary-dim:     oklch(from #20b2aa l c h / 0.12);
+
+  --color-success:         #3d9e4a;
+  --color-warning:         #c77d1a;
+  --color-error:           #c03050;
+  --color-purple:          #7a5cf5;
+  --color-orange:          #e07830;
+
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 1px 2px oklch(0.2 0.01 80 / 0.06);
+  --shadow-md: 0 4px 12px oklch(0.2 0.01 80 / 0.08);
+  --shadow-lg: 0 12px 32px oklch(0.2 0.01 80 / 0.12);
+
+  --font-body: 'Geist', -apple-system, sans-serif;
+  --font-mono: 'Geist Mono', 'Cascadia Code', monospace;
+
+  --text-xs:   clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+  --text-sm:   clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+  --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --text-lg:   clamp(1.125rem, 1rem + 0.75vw, 1.5rem);
+  --text-xl:   clamp(1.5rem, 1.2rem + 1.25vw, 2.25rem);
+
+  --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem;
+  --space-4: 1rem;    --space-5: 1.25rem; --space-6: 1.5rem;
+  --space-8: 2rem;    --space-10: 2.5rem; --space-12: 3rem;
+  --space-16: 4rem;
+
+  --transition: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  --content-default: 1000px;
+  --sidebar-width: 260px;
+}
+
+[data-theme="dark"] {
+  --color-bg:              #0f0f0e;
+  --color-surface:         #151514;
+  --color-surface-2:       #1a1a19;
+  --color-surface-offset:  #1e1e1c;
+  --color-surface-dynamic: #262624;
+  --color-divider:         #222220;
+  --color-border:          #323230;
+  --color-text:            #d4d4d0;
+  --color-text-muted:      #737370;
+  --color-text-faint:      #484845;
+  --color-text-inverse:    #0f0f0e;
+
+  --color-primary:         #3ecdc5;
+  --color-primary-hover:   #5fd8d0;
+  --color-primary-active:  #7ae0da;
+  --color-primary-highlight: #1a3030;
+  --color-primary-dim:     oklch(from #3ecdc5 l c h / 0.12);
+
+  --color-success:         #5fb86a;
+  --color-warning:         #e09040;
+  --color-error:           #e05870;
+  --color-purple:          #a080f8;
+  --color-orange:          #f0a050;
+
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.3);
+  --shadow-md: 0 4px 12px oklch(0 0 0 / 0.4);
+  --shadow-lg: 0 12px 32px oklch(0 0 0 / 0.5);
+}
+
+/* ═══════════════════════════════════════════
+   BASE RESET
+═══════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-font-smoothing: antialiased; scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  background: var(--color-bg);
+  min-height: 100dvh;
+  line-height: 1.6;
+}
+img { display: block; max-width: 100%; }
+button { cursor: pointer; background: none; border: none; font: inherit; color: inherit; }
+a { color: inherit; text-decoration: none; }
+:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; border-radius: var(--radius-sm); }
+::selection { background: var(--color-primary-dim); color: var(--color-text); }
+
+/* ═══════════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════════ */
+.app {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) 1fr;
+  grid-template-rows: auto 1fr;
+  min-height: 100dvh;
+}
+
+/* ═══════════════════════════════════════════
+   SIDEBAR
+═══════════════════════════════════════════ */
+.sidebar {
+  grid-row: 1 / -1;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-5);
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.logo-icon {
+  width: 32px; height: 32px;
+  flex-shrink: 0;
+}
+
+.logo-text {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.logo-sub {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.sidebar-section {
+  padding: var(--space-4) var(--space-3);
+}
+
+.sidebar-section-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-faint);
+  padding: 0 var(--space-2) var(--space-2);
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-2);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: color var(--transition), background var(--transition);
+  border: 1px solid transparent;
+  width: 100%;
+  text-align: left;
+}
+.nav-item:hover {
+  color: var(--color-text);
+  background: var(--color-surface-offset);
+}
+.nav-item.active {
+  color: var(--color-primary);
+  background: var(--color-primary-dim);
+  border-color: oklch(from var(--color-primary) l c h / 0.2);
+}
+.nav-item .nav-icon { width: 16px; height: 16px; flex-shrink: 0; }
+.nav-item .nav-label { flex: 1; }
+.nav-item .nav-status {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.status-done { background: var(--color-success); }
+.status-partial { background: var(--color-warning); }
+.status-todo { background: var(--color-surface-dynamic); border: 1px solid var(--color-border); }
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: var(--space-4);
+  border-top: 1px solid var(--color-divider);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.progress-bar-wrap {
+  flex: 1;
+  margin-right: var(--space-3);
+}
+.progress-label {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-1);
+  display: flex;
+  justify-content: space-between;
+}
+.progress-track {
+  height: 4px;
+  background: var(--color-surface-dynamic);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: var(--radius-full);
+  transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ═══════════════════════════════════════════
+   TOP BAR
+═══════════════════════════════════════════ */
+.topbar {
+  grid-column: 2;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  padding: 0 var(--space-6);
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.topbar-title {
+  font-size: var(--text-base);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px; height: 32px;
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  transition: color var(--transition), background var(--transition);
+}
+.icon-btn:hover {
+  color: var(--color-text);
+  background: var(--color-surface-offset);
+}
+
+/* ═══════════════════════════════════════════
+   MAIN CONTENT
+═══════════════════════════════════════════ */
+.main {
+  grid-column: 2;
+  overflow-y: auto;
+  padding: var(--space-8) var(--space-8);
+  max-width: 860px;
+}
+
+/* ═══════════════════════════════════════════
+   VIEWS (pages)
+═══════════════════════════════════════════ */
+.view { display: none; }
+.view.active { display: block; animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+/* ═══════════════════════════════════════════
+   OVERVIEW PAGE
+═══════════════════════════════════════════ */
+.overview-header {
+  margin-bottom: var(--space-8);
+}
+.overview-header h1 {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  margin-bottom: var(--space-2);
+}
+.overview-header p {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  max-width: 55ch;
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+.stat-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+}
+.stat-value {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-primary);
+}
+.stat-label {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-top: var(--space-1);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tool-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+}
+
+.tool-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  cursor: pointer;
+  transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+.tool-card:hover {
+  border-color: oklch(from var(--color-primary) l c h / 0.35);
+  box-shadow: var(--shadow-md);
+  background: var(--color-surface-2);
+}
+.tool-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+.tool-card-icon {
+  width: 36px; height: 36px;
+  border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.tool-card h3 {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-bottom: var(--space-1);
+}
+.tool-card p {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  max-width: 40ch;
+}
+.tool-card .badge {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+}
+
+/* ═══════════════════════════════════════════
+   TEST PAGES (tool pages)
+═══════════════════════════════════════════ */
+.page-header {
+  margin-bottom: var(--space-8);
+  padding-bottom: var(--space-6);
+  border-bottom: 1px solid var(--color-divider);
+}
+.page-header-top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+.page-icon {
+  width: 40px; height: 40px;
+  border-radius: var(--radius-lg);
+  display: flex; align-items: center; justify-content: center;
+}
+.page-title {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+.page-desc {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  max-width: 60ch;
+  line-height: 1.6;
+}
+
+/* Prompt block */
+.prompt-block {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-6);
+  overflow: hidden;
+}
+.prompt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-divider);
+}
+.prompt-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-faint);
+}
+.prompt-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+.prompt-body {
+  padding: var(--space-5);
+}
+.prompt-text {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text);
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.prompt-tip {
+  padding: var(--space-3) var(--space-5);
+  background: var(--color-primary-dim);
+  border-top: 1px solid oklch(from var(--color-primary) l c h / 0.15);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Status section */
+.status-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  margin-bottom: var(--space-6);
+}
+.status-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+.section-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+.status-select {
+  display: flex;
+  gap: var(--space-2);
+}
+.status-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  transition: all var(--transition);
+}
+.status-btn:hover { background: var(--color-surface-offset); color: var(--color-text); }
+.status-btn.selected-todo { border-color: var(--color-border); background: var(--color-surface-offset); color: var(--color-text); }
+.status-btn.selected-partial { border-color: var(--color-warning); background: oklch(from var(--color-warning) l c h / 0.1); color: var(--color-warning); }
+.status-btn.selected-done { border-color: var(--color-success); background: oklch(from var(--color-success) l c h / 0.1); color: var(--color-success); }
+
+/* Notes area */
+.notes-area {
+  width: 100%;
+  min-height: 80px;
+  background: var(--color-surface-offset);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text);
+  resize: vertical;
+  transition: border-color var(--transition);
+  line-height: 1.6;
+}
+.notes-area::placeholder { color: var(--color-text-faint); }
+.notes-area:focus { outline: none; border-color: var(--color-primary); }
+
+/* Checklist */
+.checklist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition);
+  user-select: none;
+}
+.check-item:hover { background: var(--color-surface-offset); }
+.check-item input[type="checkbox"] { display: none; }
+.check-box {
+  width: 16px; height: 16px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--transition);
+  margin-top: 1px;
+}
+.check-item input:checked ~ .check-box {
+  background: var(--color-success);
+  border-color: var(--color-success);
+}
+.check-item input:checked ~ .check-label { color: var(--color-text-faint); text-decoration: line-through; }
+.check-label { flex: 1; line-height: 1.4; }
+
+/* ═══════════════════════════════════════════
+   BADGES
+═══════════════════════════════════════════ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  line-height: 1.6;
+}
+.badge-primary { background: var(--color-primary-dim); color: var(--color-primary); border: 1px solid oklch(from var(--color-primary) l c h / 0.2); }
+.badge-max { background: oklch(from var(--color-purple) l c h / 0.12); color: var(--color-purple); border: 1px solid oklch(from var(--color-purple) l c h / 0.2); }
+.badge-pro { background: oklch(from var(--color-orange) l c h / 0.12); color: var(--color-orange); border: 1px solid oklch(from var(--color-orange) l c h / 0.2); }
+.badge-free { background: var(--color-surface-offset); color: var(--color-text-muted); border: 1px solid var(--color-border); }
+.badge-done { background: oklch(from var(--color-success) l c h / 0.1); color: var(--color-success); border: 1px solid oklch(from var(--color-success) l c h / 0.2); }
+.badge-todo { background: var(--color-surface-offset); color: var(--color-text-faint); border: 1px solid var(--color-border); }
+.badge-partial { background: oklch(from var(--color-warning) l c h / 0.1); color: var(--color-warning); border: 1px solid oklch(from var(--color-warning) l c h / 0.2); }
+
+/* ═══════════════════════════════════════════
+   BUTTONS
+═══════════════════════════════════════════ */
+.btn {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+.btn-primary {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  border: 1px solid transparent;
+}
+.btn-primary:hover { background: var(--color-primary-hover); }
+.btn-ghost {
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+.btn-ghost:hover { background: var(--color-surface-offset); color: var(--color-text); }
+
+/* ═══════════════════════════════════════════
+   INFO BLOCKS
+═══════════════════════════════════════════ */
+.info-block {
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  margin-bottom: var(--space-4);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  display: flex;
+  gap: var(--space-3);
+}
+.info-block-icon { flex-shrink: 0; width: 16px; height: 16px; margin-top: 1px; }
+.info-teal { background: var(--color-primary-dim); color: var(--color-text-muted); border: 1px solid oklch(from var(--color-primary) l c h / 0.15); }
+.info-purple { background: oklch(from var(--color-purple) l c h / 0.08); color: var(--color-text-muted); border: 1px solid oklch(from var(--color-purple) l c h / 0.2); }
+.info-orange { background: oklch(from var(--color-orange) l c h / 0.08); color: var(--color-text-muted); border: 1px solid oklch(from var(--color-orange) l c h / 0.2); }
+.info-block strong { color: var(--color-text); }
+
+/* divider */
+.divider { height: 1px; background: var(--color-divider); margin: var(--space-6) 0; }
+
+/* tag list */
+.tag-list { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
+
+/* responsive */
+@media (max-width: 768px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .topbar { grid-column: 1; }
+  .main { grid-column: 1; padding: var(--space-4); }
+  .tool-grid { grid-template-columns: 1fr; }
+  .stat-row { grid-template-columns: 1fr; }
+}
 </style>
 </head>
 <body>
-<div class="msg">
-  <h2>🧪 Perplexity Max — Tool Tests</h2>
-  <p>Full app available as a download — see README for instructions.</p>
-  <p><a href="https://github.com/Lex226/perplexity-max-tool-tests/releases">Download latest release</a></p>
+
+<div class="app">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <svg class="logo-icon" viewBox="0 0 32 32" fill="none" aria-label="Tool Tests Logo">
+        <rect width="32" height="32" rx="8" fill="var(--color-primary-dim)"/>
+        <path d="M9 10h6M9 16h14M9 22h10" stroke="var(--color-primary)" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="24" cy="10" r="3" fill="var(--color-primary)" opacity="0.7"/>
+      </svg>
+      <div>
+        <div class="logo-text">Tool Tests</div>
+        <div class="logo-sub">Perplexity Max</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Навигация</div>
+      <button class="nav-item active" data-view="overview" onclick="navigate('overview')">
+        <i data-lucide="layout-dashboard" class="nav-icon"></i>
+        <span class="nav-label">Обзор</span>
+      </button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Режимы поиска</div>
+      <button class="nav-item" data-view="search-modes" onclick="navigate('search-modes')">
+        <i data-lucide="search" class="nav-icon"></i>
+        <span class="nav-label">Search Modes</span>
+        <span class="nav-status status-todo" id="st-search-modes"></span>
+      </button>
+      <button class="nav-item" data-view="deep-research" onclick="navigate('deep-research')">
+        <i data-lucide="telescope" class="nav-icon"></i>
+        <span class="nav-label">Deep Research</span>
+        <span class="nav-status status-todo" id="st-deep-research"></span>
+      </button>
+      <button class="nav-item" data-view="reasoning" onclick="navigate('reasoning')">
+        <i data-lucide="brain" class="nav-icon"></i>
+        <span class="nav-label">Reasoning Models</span>
+        <span class="nav-status status-todo" id="st-reasoning"></span>
+      </button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Генерация</div>
+      <button class="nav-item" data-view="labs" onclick="navigate('labs')">
+        <i data-lucide="flask-conical" class="nav-icon"></i>
+        <span class="nav-label">Labs (Create)</span>
+        <span class="nav-status status-todo" id="st-labs"></span>
+      </button>
+      <button class="nav-item" data-view="image-gen" onclick="navigate('image-gen')">
+        <i data-lucide="image" class="nav-icon"></i>
+        <span class="nav-label">Image Generation</span>
+        <span class="nav-status status-todo" id="st-image-gen"></span>
+      </button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Контекст и интеграции</div>
+      <button class="nav-item" data-view="file-upload" onclick="navigate('file-upload')">
+        <i data-lucide="file-up" class="nav-icon"></i>
+        <span class="nav-label">File Upload</span>
+        <span class="nav-status status-todo" id="st-file-upload"></span>
+      </button>
+      <button class="nav-item" data-view="mcp" onclick="navigate('mcp')">
+        <i data-lucide="plug" class="nav-icon"></i>
+        <span class="nav-label">MCP Servers</span>
+        <span class="nav-status status-todo" id="st-mcp"></span>
+      </button>
+      <button class="nav-item" data-view="spaces" onclick="navigate('spaces')">
+        <i data-lucide="box" class="nav-icon"></i>
+        <span class="nav-label">Spaces</span>
+        <span class="nav-status status-todo" id="st-spaces"></span>
+      </button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Max Exclusive</div>
+      <button class="nav-item" data-view="comet" onclick="navigate('comet')">
+        <i data-lucide="globe" class="nav-icon"></i>
+        <span class="nav-label">Comet Browser</span>
+        <span class="nav-status status-todo" id="st-comet"></span>
+      </button>
+      <button class="nav-item" data-view="api" onclick="navigate('api')">
+        <i data-lucide="terminal" class="nav-icon"></i>
+        <span class="nav-label">Agent API</span>
+        <span class="nav-status status-todo" id="st-api"></span>
+      </button>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="progress-bar-wrap">
+        <div class="progress-label">
+          <span>Прогресс</span>
+          <span id="progress-count">0 / 10</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+        </div>
+      </div>
+      <button class="icon-btn" data-theme-toggle aria-label="Toggle theme">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ═══ TOP BAR ═══ -->
+  <header class="topbar">
+    <div class="topbar-title" id="topbar-title">Обзор</div>
+    <div class="topbar-right">
+      <button class="btn btn-ghost" onclick="resetAll()">
+        <i data-lucide="rotate-ccw" style="width:12px;height:12px;"></i>
+        Сбросить
+      </button>
+      <button class="btn btn-primary" onclick="exportNotes()">
+        <i data-lucide="download" style="width:12px;height:12px;"></i>
+        Экспорт
+      </button>
+    </div>
+  </header>
+
+  <!-- ═══ MAIN ═══ -->
+  <main class="main">
+
+    <!-- ─── OVERVIEW ─── -->
+    <div class="view active" id="view-overview">
+      <div class="overview-header">
+        <h1>Perplexity Max<br>Tool Tests Space</h1>
+        <p>Систематическое тестирование всех инструментов. Отмечай статус, пиши заметки, следи за прогрессом.</p>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-done">0</div>
+          <div class="stat-label">Протестировано</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-partial" style="color:var(--color-warning)">0</div>
+          <div class="stat-label">В процессе</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-todo" style="color:var(--color-text-muted)">10</div>
+          <div class="stat-label">Не начато</div>
+        </div>
+      </div>
+
+      <div class="tool-grid">
+        <div class="tool-card" onclick="navigate('search-modes')">
+          <div class="tool-card-header">
+            <div class="tool-card-icon" style="background:var(--color-primary-dim)">
+              <i data-lucide="search" style="width:18px;height:18px;color:var(--color-primary)"></i>
+            </div>
+            <span class="badge badge-free">Free</span>
+          </div>
+          <h3>Search Modes</h3>
+          <p>Best, Pro Search — разница в глубине и итерациях поиска</p>
+        </div>
+        <div class="tool-card" onclick="navigate('deep-research')">
+          <div class="tool-card-header">
+            <div class="tool-card-icon" style="background:oklch(from var(--color-purple) l c h / 0.12)">
+              <i data-lucide="telescope" style="width:18px;height:18px;color:var(--color-purple)"></i>
+            </div>
+            <span class="badge badge-pro">Pro+</span>
+          </div>
+          <h3>Deep Research</h3>
+          <p>Agentic loop: 20–50 поисков, reasoning токены, структурный отчёт</p>
+        </div>
+        <div class="tool-card" onclick="navigate('reasoning')">
+          <div class="tool-card-header">
+            <div class="tool-card-icon" style="background:oklch(from var(--color-orange) l c h / 0.1)">
+              <i data-lucide="brain" style="width:18px;height:18px;color:var(--color-orange)"></i>
+            </div>
+            <span class="badge badge-pro">Pro+</span>
+          </div>
+          <h3>Reasoning Models</h3>
+          <p>o3-pro, Claude Opus 4 — chain-of-thought для сложных задач</p>
+        </div>
+        <div class="tool-card" onclick="navigate('labs')">
+          <div class="tool-card-header">
+            <div class="tool-card-icon" style="background:oklch(from var(--color-success) l c h / 0.1)">
+              <i data-lucide="flask-conical" style="width:18px;height:18px;color:var(--color-success)"></i>
+            </div>
+            <span class="badge badge-max">Max</span>
+          </div>
+          <h3>Labs (Create)</h3>
+          <p>Unlimited создание файлов: Excel, HTML-приложения, презентации</p>
+        </div>
+        <div class="tool-card" onclick="navigate('image-gen')">
+          <div class="tool-card-header">
+            <div class="tool-card-icon" style="background:oklch(from var(--color-primary) l c h / 0.08)">
+              <i data-lucide="image" style="width:18px;height:18px;color:var(--color-primary)"></i>
+            </div>
+            <span class="badge badge-pro">Pro+</span>
+          </div>
+          <h3>Image Generation</h3>
+          <p>Генерация изображений по запросу, редактирование, стиль</p>
+        </div>
+        <div class="tool-card" onclick="navigate('file-upload')">
+          <div class="tool-card-header">
+            <div class="tool-card-icon" style="background:oklch(from var(--color-warning) l c h / 0.1)">
+              <i data-lucide="file-up" style="width:18px;height:18px;color:var(--color-warning)"></i>
+            </div>
+            <span class="badge badge-pro">Pro+</span>
+          </div>
+          <h3>File Upload</h3>
+          <p>Анализ CSV, PDF, изображений, SQL-скриншотов</p>
+        </div>
+        <div class="tool-card" onclick="navigate('mcp')">
+          <div class="tool-card-header">
+            <div class="tool-card-icon" style="background:oklch(from var(--color-error) l c h / 0.1)">
+              <i data-lucide="plug" style="width:18px;height:18px;color:var(--color-error)"></i>
+            </div>
+            <span class="badge badge-max">Max</span>
+          </div>
+          <h3>MCP Servers</h3>
+          <p>Подключение внешних инструментов: GitHub, БД, файловая система</p>
+        </div>
+        <div class="tool-card" onclick="navigate('comet')">
+          <div class="tool-card-header">
+            <div class="tool-card-icon" style="background:oklch(from var(--color-blue, #5591c7) l c h / 0.1)">
+              <i data-lucide="globe" style="width:18px;height:18px;color:#5591c7"></i>
+            </div>
+            <span class="badge badge-max">Max Only</span>
+          </div>
+          <h3>Comet Browser</h3>
+          <p>AI прямо в браузере, работа с открытой страницей</p>
+        </div>
+        <div class="tool-card" onclick="navigate('api')">
+          <div class="tool-card-header">
+            <div class="tool-card-icon" style="background:oklch(from var(--color-primary) l c h / 0.08)">
+              <i data-lucide="terminal" style="width:18px;height:18px;color:var(--color-primary)"></i>
+            </div>
+            <span class="badge badge-max">API</span>
+          </div>
+          <h3>Agent API</h3>
+          <p>sonar-deep-research через API, async workflows, Python/cURL</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SEARCH MODES ─── -->
+    <div class="view" id="view-search-modes">
+      <div class="page-header">
+        <div class="page-header-top">
+          <div class="page-icon" style="background:var(--color-primary-dim)">
+            <i data-lucide="search" style="width:20px;height:20px;color:var(--color-primary)"></i>
+          </div>
+          <div>
+            <div class="page-title">Search Modes</div>
+            <div class="tag-list">
+              <span class="badge badge-free">Free</span>
+              <span class="badge badge-pro">Pro</span>
+            </div>
+          </div>
+        </div>
+        <p class="page-desc">Сравни три режима поиска на одном и том же запросе. Разница в количестве источников, глубине и времени.</p>
+      </div>
+
+      <div class="info-block info-teal">
+        <i data-lucide="lightbulb" class="info-block-icon" style="color:var(--color-primary)"></i>
+        <div><strong>Задание:</strong> Возьми одну тему и прогони через все три режима. Запиши разницу в качестве ответа, количестве источников и времени ответа.</div>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-header">
+          <span class="prompt-label">Промпт #1 — Best (авто)</span>
+          <div class="prompt-actions">
+            <button class="btn btn-ghost" onclick="copyPrompt(this)"><i data-lucide="copy" style="width:12px;height:12px"></i> Копировать</button>
+          </div>
+        </div>
+        <div class="prompt-body">
+          <div class="prompt-text">Что такое Medallion Architecture (Bronze/Silver/Gold) в хранилище данных? Объясни кратко с примером.</div>
+        </div>
+        <div class="prompt-tip">
+          <i data-lucide="info" style="width:12px;height:12px;color:var(--color-primary)"></i>
+          Используй этот же вопрос для всех трёх режимов. Mode: Best (по умолчанию)
+        </div>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-header">
+          <span class="prompt-label">Промпт #2 — Pro Search</span>
+          <div class="prompt-actions">
+            <button class="btn btn-ghost" onclick="copyPrompt(this)"><i data-lucide="copy" style="width:12px;height:12px"></i> Копировать</button>
+          </div>
+        </div>
+        <div class="prompt-body">
+          <div class="prompt-text">Что такое Medallion Architecture (Bronze/Silver/Gold) в хранилище данных? Объясни кратко с примером.</div>
+        </div>
+        <div class="prompt-tip">
+          <i data-lucide="info" style="width:12px;height:12px;color:var(--color-primary)"></i>
+          Тот же вопрос. Mode: Pro Search (кнопка "Pro" рядом с полем ввода)
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="status-section">
+        <div class="status-section-header">
+          <span class="section-title">Статус тестирования</span>
+          <div class="status-select" id="status-search-modes">
+            <button class="status-btn selected-todo" onclick="setStatus('search-modes','todo',this)">⬜ Не начато</button>
+            <button class="status-btn" onclick="setStatus('search-modes','partial',this)">🔶 В процессе</button>
+            <button class="status-btn" onclick="setStatus('search-modes','done',this)">✅ Готово</button>
+          </div>
+        </div>
+        <div class="checklist">
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'sm1')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Протестировал режим Best (авто)</span></label>
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'sm2')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Протестировал Pro Search</span></label>
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'sm3')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Сравнил количество источников</span></label>
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'sm4')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Замерил время ответа</span></label>
+        </div>
+        <div style="margin-top:var(--space-4)">
+          <div class="prompt-label" style="margin-bottom:var(--space-2)">Заметки</div>
+          <textarea class="notes-area" id="notes-search-modes" placeholder="Что заметил? Разница в ответах..." onchange="saveNote('search-modes',this.value)"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── DEEP RESEARCH ─── -->
+    <div class="view" id="view-deep-research">
+      <div class="page-header">
+        <div class="page-header-top">
+          <div class="page-icon" style="background:oklch(from var(--color-purple) l c h / 0.12)">
+            <i data-lucide="telescope" style="width:20px;height:20px;color:var(--color-purple)"></i>
+          </div>
+          <div>
+            <div class="page-title">Deep Research</div>
+            <div class="tag-list">
+              <span class="badge badge-pro">Pro+</span>
+            </div>
+          </div>
+        </div>
+        <p class="page-desc">Agentic loop: модель сама планирует, ищет 20–50 раз, верифицирует и строит отчёт. Занимает 2–4 минуты.</p>
+      </div>
+
+      <div class="info-block info-purple">
+        <i data-lucide="zap" class="info-block-icon" style="color:var(--color-purple)"></i>
+        <div><strong>Для айтишника:</strong> Обрати внимание на reasoning_steps — там видно как модель планирует, какие поисковые запросы генерирует и как переформулирует план на ходу.</div>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-header">
+          <span class="prompt-label">Промпт — Deep Research (профессиональный)</span>
+          <div class="prompt-actions">
+            <button class="btn btn-ghost" onclick="copyPrompt(this)"><i data-lucide="copy" style="width:12px;height:12px"></i> Копировать</button>
+          </div>
+        </div>
+        <div class="prompt-body">
+          <div class="prompt-text">Сравни архитектурные подходы для построения хранилища данных в 2025 году: Data Vault 2.0, Medallion Architecture (Lakehouse), и Kimball Dimensional Modeling. Для каждого опиши: когда применять, сложность внедрения, совместимость с SQL Server и Power BI, реальные кейсы. Сделай вывод — что выбрать команде из 2–3 человек с 1С как источником данных.</div>
+        </div>
+        <div class="prompt-tip">
+          <i data-lucide="info" style="width:12px;height:12px;color:var(--color-purple)"></i>
+          Mode: Research. Жди 2–4 мин. Посмотри сколько источников и структуру отчёта.
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="status-section">
+        <div class="status-section-header">
+          <span class="section-title">Статус тестирования</span>
+          <div class="status-select" id="status-deep-research">
+            <button class="status-btn selected-todo" onclick="setStatus('deep-research','todo',this)">⬜ Не начато</button>
+            <button class="status-btn" onclick="setStatus('deep-research','partial',this)">🔶 В процессе</button>
+            <button class="status-btn" onclick="setStatus('deep-research','done',this)">✅ Готово</button>
+          </div>
+        </div>
+        <div class="checklist">
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'dr1')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Запустил Deep Research запрос</span></label>
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'dr2')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Посмотрел reasoning_steps / план поиска</span></label>
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'dr3')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Посчитал количество источников в отчёте</span></label>
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'dr4')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Экспортировал результат как PDF / Markdown</span></label>
+        </div>
+        <div style="margin-top:var(--space-4)">
+          <div class="prompt-label" style="margin-bottom:var(--space-2)">Заметки</div>
+          <textarea class="notes-area" id="notes-deep-research" placeholder="Время ответа, кол-во источников, качество..." onchange="saveNote('deep-research',this.value)"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── REASONING ─── -->
+    <div class="view" id="view-reasoning">
+      <div class="page-header">
+        <div class="page-header-top">
+          <div class="page-icon" style="background:oklch(from var(--color-orange) l c h / 0.1)">
+            <i data-lucide="brain" style="width:20px;height:20px;color:var(--color-orange)"></i>
+          </div>
+          <div>
+            <div class="page-title">Reasoning Models</div>
+            <div class="tag-list">
+              <span class="badge badge-pro">Pro+</span>
+            </div>
+          </div>
+        </div>
+        <p class="page-desc">o3-pro, Claude Opus 4.5 с расширенным chain-of-thought. Для задач, где важна пошаговая логика, а не скорость.</p>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-header">
+          <span class="prompt-label">Промпт — SQL архитектурная задача</span>
+          <div class="prompt-actions">
+            <button class="btn btn-ghost" onclick="copyPrompt(this)"><i data-lucide="copy" style="width:12px;height:12px"></i> Копировать</button>
+          </div>
+        </div>
+        <div class="prompt-body">
+          <div class="prompt-text">Есть таблица фактов продаж на SQL Server: 50 млн строк, ежедневная загрузка 200к строк из 1С. Нужно построить агрегаты по дням/месяцам/кварталам для Power BI. Что выбрать: indexed views, columnstore index, partitioning + columnstore, или отдельная агрегат-таблица с заданием по расписанию? Рассмотри trade-offs каждого подхода с точки зрения: скорость запросов, сложность поддержки, совместимость с DirectQuery в Power BI.</div>
+        </div>
+        <div class="prompt-tip">
+          <i data-lucide="info" style="width:12px;height:12px;color:var(--color-orange)"></i>
+          Выбери модель: o3-pro или Claude Opus 4. Сравни глубину рассуждений с обычным ответом.
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="status-section">
+        <div class="status-section-header">
+          <span class="section-title">Статус тестирования</span>
+          <div class="status-select" id="status-reasoning">
+            <button class="status-btn selected-todo" onclick="setStatus('reasoning','todo',this)">⬜ Не начато</button>
+            <button class="status-btn" onclick="setStatus('reasoning','partial',this)">🔶 В процессе</button>
+            <button class="status-btn" onclick="setStatus('reasoning','done',this)">✅ Готово</button>
+          </div>
+        </div>
+        <div class="checklist">
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'re1')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Протестировал o3-pro</span></label>
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'re2')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Протестировал Claude Opus 4</span></label>
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'re3')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Сравнил качество рассуждений vs стандартная модель</span></label>
+        </div>
+        <div style="margin-top:var(--space-4)">
+          <div class="prompt-label" style="margin-bottom:var(--space-2)">Заметки</div>
+          <textarea class="notes-area" id="notes-reasoning" placeholder="Разница в глубине, точности, скорости..." onchange="saveNote('reasoning',this.value)"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── LABS ─── -->
+    <div class="view" id="view-labs">
+      <div class="page-header">
+        <div class="page-header-top">
+          <div class="page-icon" style="background:oklch(from var(--color-success) l c h / 0.1)">
+            <i data-lucide="flask-conical" style="width:20px;height:20px;color:var(--color-success)"></i>
+          </div>
+          <div>
+            <div class="page-title">Labs — Create Files & Apps</div>
+            <div class="tag-list"><span class="badge badge-max">Max Unlimited</span></div>
+          </div>
+        </div>
+        <p class="page-desc">Генерация Excel, HTML-приложений, презентаций. Max даёт неограниченный доступ. Тестируй все три типа артефактов.</p>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-header">
+          <span class="prompt-label">Тест 1 — Spreadsheet (Excel)</span>
+          <div class="prompt-actions">
+            <button class="btn btn-ghost" onclick="copyPrompt(this)"><i data-lucide="copy" style="width:12px;height:12px"></i> Копировать</button>
+          </div>
+        </div>
+        <div class="prompt-body">
+          <div class="prompt-text">Создай Excel-файл: таблица KPI по продажам за последние 12 месяцев. Столбцы: месяц, план, факт, % выполнения, отклонение, статус (RAG: Red/Amber/Green). Добавь строку итогов и условное форматирование в столбце статус.</div>
+        </div>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-header">
+          <span class="prompt-label">Тест 2 — Web App (HTML/JS)</span>
+          <div class="prompt-actions">
+            <button class="btn btn-ghost" onclick="copyPrompt(this)"><i data-lucide="copy" style="width:12px;height:12px"></i> Копировать</button>
+          </div>
+        </div>
+        <div class="prompt-body">
+          <div class="prompt-text">Сделай интерактивный веб-дашборд: данные продаж по месяцам, бар-чарт + линейный тренд, фильтр по году, карточки с KPI (выручка, кол-во заказов, средний чек). Тёмная тема, минималистичный дизайн.</div>
+        </div>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-header">
+          <span class="prompt-label">Тест 3 — Slides (презентация)</span>
+          <div class="prompt-actions">
+            <button class="btn btn-ghost" onclick="copyPrompt(this)"><i data-lucide="copy" style="width:12px;height:12px"></i> Копировать</button>
+          </div>
+        </div>
+        <div class="prompt-body">
+          <div class="prompt-text">Создай презентацию (5 слайдов): архитектура нашего хранилища данных. Слайды: 1) Обзор архитектуры Medallion, 2) Bronze layer — источники данных (1С, ERP), 3) Silver layer — трансформации и очистка, 4) Gold layer — витрины для Power BI, 5) Roadmap на 2026 год.</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="status-section">
+        <div class="status-section-header">
+          <span class="section-title">Статус тестирования</span>
+          <div class="status-select" id="status-labs">
+            <button class="status-btn selected-todo" onclick="setStatus('labs','todo',this)">⬜ Не начато</button>
+            <button class="status-btn" onclick="setStatus('labs','partial',this)">🔶 В процессе</button>
+            <button class="status-btn" onclick="setStatus('labs','done',this)">✅ Готово</button>
+          </div>
+        </div>
+        <div class="checklist">
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'la1')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Сгенерировал Excel-файл и скачал</span></label>
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'la2')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Сгенерировал веб-приложение (HTML/JS)</span></label>
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'la3')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Сгенерировал презентацию</span></label>
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'la4')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Проверил лимиты на бесплатном vs Max</span></label>
+        </div>
+        <div style="margin-top:var(--space-4)">
+          <div class="prompt-label" style="margin-bottom:var(--space-2)">Заметки</div>
+          <textarea class="notes-area" id="notes-labs" placeholder="Качество файлов, что получилось, что нет..." onchange="saveNote('labs',this.value)"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── IMAGE GEN ─── -->
+    <div class="view" id="view-image-gen">
+      <div class="page-header">
+        <div class="page-header-top">
+          <div class="page-icon" style="background:var(--color-primary-dim)">
+            <i data-lucide="image" style="width:20px;height:20px;color:var(--color-primary)"></i>
+          </div>
+          <div>
+            <div class="page-title">Image Generation</div>
+            <div class="tag-list"><span class="badge badge-pro">Pro+</span></div>
+          </div>
+        </div>
+        <p class="page-desc">Генерация изображений — технические схемы, иллюстрации, редактирование. Тест на полезность для технической документации.</p>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-header">
+          <span class="prompt-label">Промпт — Техническая схема</span>
+          <div class="prompt-actions">
+            <button class="btn btn-ghost" onclick="copyPrompt(this)"><i data-lucide="copy" style="width:12px;height:12px"></i> Копировать</button>
+          </div>
+        </div>
+        <div class="prompt-body">
+          <div class="prompt-text">Нарисуй архитектурную схему ETL-пайплайна: 1С ERP → SQL Server (Bronze) → SSIS трансформации (Silver) → Power BI (Gold). Минималистичный стиль, тёмный фон, цветовая кодировка по слоям. Стрелки показывают направление потока данных.</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="status-section">
+        <div class="status-section-header">
+          <span class="section-title">Статус тестирования</span>
+          <div class="status-select" id="status-image-gen">
+            <button class="status-btn selected-todo" onclick="setStatus('image-gen','todo',this)">⬜ Не начато</button>
+            <button class="status-btn" onclick="setStatus('image-gen','partial',this)">🔶 В процессе</button>
+            <button class="status-btn" onclick="setStatus('image-gen','done',this)">✅ Готово</button>
+          </div>
+        </div>
+        <div class="checklist">
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'ig1')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Сгенерировал техническую схему</span></label>
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'ig2')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Попробовал редактировать изображение итерациями</span></label>
+        </div>
+        <div style="margin-top:var(--space-4)">
+          <div class="prompt-label" style="margin-bottom:var(--space-2)">Заметки</div>
+          <textarea class="notes-area" id="notes-image-gen" placeholder="Результат, точность схемы, пригодность для docs..." onchange="saveNote('image-gen',this.value)"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── FILE UPLOAD ─── -->
+    <div class="view" id="view-file-upload">
+      <div class="page-header">
+        <div class="page-header-top">
+          <div class="page-icon" style="background:oklch(from var(--color-warning) l c h / 0.1)">
+            <i data-lucide="file-up" style="width:20px;height:20px;color:var(--color-warning)"></i>
+          </div>
+          <div>
+            <div class="page-title">File Upload & Analysis</div>
+            <div class="tag-list"><span class="badge badge-pro">Pro+</span></div>
+          </div>
+        </div>
+        <p class="page-desc">Загрузи реальные рабочие файлы и попроси модель их проанализировать. Три типа: CSV/Excel, SQL-скриншот, PDF.</p>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-header">
+          <span class="prompt-label">Тест 1 — CSV/Excel анализ</span>
+          <div class="prompt-actions">
+            <button class="btn btn-ghost" onclick="copyPrompt(this)"><i data-lucide="copy" style="width:12px;height:12px"></i> Копировать</button>
+          </div>
+        </div>
+        <div class="prompt-body">
+          <div class="prompt-text">[Загрузи любой CSV-отчёт из 1С или выгрузку из Power BI]
+
+Проанализируй этот файл: найди аномалии, пустые значения, дубликаты. Дай краткий профиль данных: сколько строк, типы полей, диапазоны значений. Предложи как улучшить структуру для загрузки в хранилище данных.</div>
+        </div>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-header">
+          <span class="prompt-label">Тест 2 — SQL скриншот</span>
+          <div class="prompt-actions">
+            <button class="btn btn-ghost" onclick="copyPrompt(this)"><i data-lucide="copy" style="width:12px;height:12px"></i> Копировать</button>
+          </div>
+        </div>
+        <div class="prompt-body">
+          <div class="prompt-text">[Загрузи скриншот сложного SQL-запроса из SSMS]
+
+Оптимизируй этот запрос: найди проблемные места (N+1, отсутствие индексов, implicit conversion). Перепиши с учётом лучших практик T-SQL. Объясни каждое изменение.</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="status-section">
+        <div class="status-section-header">
+          <span class="section-title">Статус тестирования</span>
+          <div class="status-select" id="status-file-upload">
+            <button class="status-btn selected-todo" onclick="setStatus('file-upload','todo',this)">⬜ Не начато</button>
+            <button class="status-btn" onclick="setStatus('file-upload','partial',this)">🔶 В процессе</button>
+            <button class="status-btn" onclick="setStatus('file-upload','done',this)">✅ Готово</button>
+          </div>
+        </div>
+        <div class="checklist">
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'fu1')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Загрузил CSV и получил анализ</span></label>
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'fu2')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Загрузил скриншот SQL — попросил оптимизацию</span></label>
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'fu3')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Загрузил PDF-документацию — задал вопросы</span></label>
+        </div>
+        <div style="margin-top:var(--space-4)">
+          <div class="prompt-label" style="margin-bottom:var(--space-2)">Заметки</div>
+          <textarea class="notes-area" id="notes-file-upload" placeholder="Точность анализа, что не распознало..." onchange="saveNote('file-upload',this.value)"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── MCP ─── -->
+    <div class="view" id="view-mcp">
+      <div class="page-header">
+        <div class="page-header-top">
+          <div class="page-icon" style="background:oklch(from var(--color-error) l c h / 0.1)">
+            <i data-lucide="plug" style="width:20px;height:20px;color:var(--color-error)"></i>
+          </div>
+          <div>
+            <div class="page-title">MCP Servers</div>
+            <div class="tag-list"><span class="badge badge-max">Max</span></div>
+          </div>
+        </div>
+        <p class="page-desc">Model Context Protocol — подключи внешние инструменты. Модель использует их как tool calls в своём agentic loop.</p>
+      </div>
+
+      <div class="info-block info-orange">
+        <i data-lucide="settings" class="info-block-icon" style="color:var(--color-orange)"></i>
+        <div><strong>Как подключить:</strong> Settings → MCP Servers → Add Server. Для GitHub: используй официальный <code style="font-family:var(--font-mono);background:var(--color-surface-dynamic);padding:1px 4px;border-radius:3px">github.com/modelcontextprotocol/servers</code> MCP сервер.</div>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-header">
+          <span class="prompt-label">Тест — GitHub MCP</span>
+          <div class="prompt-actions">
+            <button class="btn btn-ghost" onclick="copyPrompt(this)"><i data-lucide="copy" style="width:12px;height:12px"></i> Копировать</button>
+          </div>
+        </div>
+        <div class="prompt-body">
+          <div class="prompt-text">[После подключения GitHub MCP сервера]
+
+Посмотри на мой репозиторий [repo-name]. Что изменилось за последние 7 дней? Есть ли открытые PR или issues? Какие файлы менялись чаще всего в этом месяце?</div>
+        </div>
+        <div class="prompt-tip">
+          <i data-lucide="info" style="width:12px;height:12px;color:var(--color-orange)"></i>
+          Это самый технически интересный тест — видно как AI дёргает реальный GitHub API как tool call
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="status-section">
+        <div class="status-section-header">
+          <span class="section-title">Статус тестирования</span>
+          <div class="status-select" id="status-mcp">
+            <button class="status-btn selected-todo" onclick="setStatus('mcp','todo',this)">⬜ Не начато</button>
+            <button class="status-btn" onclick="setStatus('mcp','partial',this)">🔶 В процессе</button>
+            <button class="status-btn" onclick="setStatus('mcp','done',this)">✅ Готово</button>
+          </div>
+        </div>
+        <div class="checklist">
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'mc1')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Нашёл и установил GitHub MCP сервер</span></label>
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'mc2')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Подключил к Perplexity Settings</span></label>
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'mc3')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Сделал запрос, видел tool calls в ответе</span></label>
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'mc4')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Попробовал второй MCP (filesystem или Obsidian)</span></label>
+        </div>
+        <div style="margin-top:var(--space-4)">
+          <div class="prompt-label" style="margin-bottom:var(--space-2)">Заметки</div>
+          <textarea class="notes-area" id="notes-mcp" placeholder="Какой MCP подключил, как сработало..." onchange="saveNote('mcp',this.value)"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── SPACES ─── -->
+    <div class="view" id="view-spaces">
+      <div class="page-header">
+        <div class="page-header-top">
+          <div class="page-icon" style="background:oklch(from var(--color-success) l c h / 0.1)">
+            <i data-lucide="box" style="width:20px;height:20px;color:var(--color-success)"></i>
+          </div>
+          <div>
+            <div class="page-title">Spaces</div>
+            <div class="tag-list"><span class="badge badge-pro">Pro+</span></div>
+          </div>
+        </div>
+        <p class="page-desc">Изолированные рабочие пространства с общим контекстом. Отличный вариант для разделения проектов.</p>
+      </div>
+
+      <div class="info-block info-teal">
+        <i data-lucide="folder" class="info-block-icon" style="color:var(--color-primary)"></i>
+        <div><strong>Идеи для Spaces под твои задачи:</strong> «1С разработка» (контекст Alfa-Auto конфигурации), «SQL Server & BI» (схемы, запросы, Power BI DAX), «Data Warehouse» (Medallion архитектура, ETL логи).</div>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-header">
+          <span class="prompt-label">Тест — Система промптов для Space</span>
+          <div class="prompt-actions">
+            <button class="btn btn-ghost" onclick="copyPrompt(this)"><i data-lucide="copy" style="width:12px;height:12px"></i> Копировать</button>
+          </div>
+        </div>
+        <div class="prompt-body">
+          <div class="prompt-text">[System Prompt для Space "SQL Server & BI"]
+
+Ты эксперт по SQL Server, T-SQL и Power BI. Контекст: мы разрабатываем хранилище данных на SQL Server 2019, источники — 1С ERP (Alfa-Auto конфигурация). Архитектура: Bronze/Silver/Gold (Medallion). ETL через SSIS и Python скрипты. Отчётность — Power BI с DirectQuery и Import mode.
+
+Отвечай на русском. Код пиши в блоках с синтаксисом. Объясняй trade-offs. Если вопрос неоднозначный — уточни перед ответом.</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="status-section">
+        <div class="status-section-header">
+          <span class="section-title">Статус тестирования</span>
+          <div class="status-select" id="status-spaces">
+            <button class="status-btn selected-todo" onclick="setStatus('spaces','todo',this)">⬜ Не начато</button>
+            <button class="status-btn" onclick="setStatus('spaces','partial',this)">🔶 В процессе</button>
+            <button class="status-btn" onclick="setStatus('spaces','done',this)">✅ Готово</button>
+          </div>
+        </div>
+        <div class="checklist">
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'sp1')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Создал Space с системным промптом</span></label>
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'sp2')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Проверил что контекст применяется к ответам</span></label>
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'sp3')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Создал 2-3 разных Space для разных проектов</span></label>
+        </div>
+        <div style="margin-top:var(--space-4)">
+          <div class="prompt-label" style="margin-bottom:var(--space-2)">Заметки</div>
+          <textarea class="notes-area" id="notes-spaces" placeholder="Какие Spaces создал, насколько полезен контекст..." onchange="saveNote('spaces',this.value)"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── COMET ─── -->
+    <div class="view" id="view-comet">
+      <div class="page-header">
+        <div class="page-header-top">
+          <div class="page-icon" style="background:oklch(from #5591c7 l c h / 0.1)">
+            <i data-lucide="globe" style="width:20px;height:20px;color:#5591c7"></i>
+          </div>
+          <div>
+            <div class="page-title">Comet Browser</div>
+            <div class="tag-list"><span class="badge badge-max">Max Only</span></div>
+          </div>
+        </div>
+        <p class="page-desc">AI-браузер с нативной интеграцией Perplexity. Работает с открытой страницей, может выполнять действия.</p>
+      </div>
+
+      <div class="info-block info-purple">
+        <i data-lucide="download" class="info-block-icon" style="color:var(--color-purple)"></i>
+        <div><strong>Установка:</strong> Скачай Comet на <strong>perplexity.ai/max</strong>. Войди с Max аккаунтом. Тест требует установленного браузера.</div>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-header">
+          <span class="prompt-label">Тест — Работа с документацией</span>
+          <div class="prompt-actions">
+            <button class="btn btn-ghost" onclick="copyPrompt(this)"><i data-lucide="copy" style="width:12px;height:12px"></i> Копировать</button>
+          </div>
+        </div>
+        <div class="prompt-body">
+          <div class="prompt-text">[Открой docs.microsoft.com/sql/t-sql/ или любую SQL-документацию]
+
+Из этой страницы: выдели все функции с примерами использования. Составь краткую шпаргалку в формате таблицы: функция | синтаксис | пример | когда использовать.</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="status-section">
+        <div class="status-section-header">
+          <span class="section-title">Статус тестирования</span>
+          <div class="status-select" id="status-comet">
+            <button class="status-btn selected-todo" onclick="setStatus('comet','todo',this)">⬜ Не начато</button>
+            <button class="status-btn" onclick="setStatus('comet','partial',this)">🔶 В процессе</button>
+            <button class="status-btn" onclick="setStatus('comet','done',this)">✅ Готово</button>
+          </div>
+        </div>
+        <div class="checklist">
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'co1')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Установил Comet браузер</span></label>
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'co2')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Вызвал AI на открытой странице (Ctrl+K или боковая панель)</span></label>
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'co3')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Попробовал автоматизацию действий в браузере</span></label>
+        </div>
+        <div style="margin-top:var(--space-4)">
+          <div class="prompt-label" style="margin-bottom:var(--space-2)">Заметки</div>
+          <textarea class="notes-area" id="notes-comet" placeholder="Впечатления, удобство, сценарии использования..." onchange="saveNote('comet',this.value)"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── API ─── -->
+    <div class="view" id="view-api">
+      <div class="page-header">
+        <div class="page-header-top">
+          <div class="page-icon" style="background:var(--color-primary-dim)">
+            <i data-lucide="terminal" style="width:20px;height:20px;color:var(--color-primary)"></i>
+          </div>
+          <div>
+            <div class="page-title">Agent API</div>
+            <div class="tag-list"><span class="badge badge-max">API</span></div>
+          </div>
+        </div>
+        <p class="page-desc">sonar-deep-research через REST API. Async-режим для долгих запросов, tool calls, Python SDK. Для автоматизации рабочих процессов.</p>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-header">
+          <span class="prompt-label">Код — Python async Deep Research</span>
+          <div class="prompt-actions">
+            <button class="btn btn-ghost" onclick="copyPrompt(this)"><i data-lucide="copy" style="width:12px;height:12px"></i> Копировать</button>
+          </div>
+        </div>
+        <div class="prompt-body">
+          <div class="prompt-text">import os
+from perplexity import Perplexity
+
+client = Perplexity(api_key=os.environ["PPLX_API_KEY"])
+
+# Async Deep Research — занимает 2-4 минуты
+response = client.responses.create(
+    preset="advanced-deep-research",
+    input="Лучшие практики партиционирования таблиц в SQL Server 2019 для хранилища данных с ежедневной загрузкой 500к строк"
+)
+
+print(response.output_text)
+# Количество поисковых запросов:
+print(f"Searches: {response.usage.num_search_queries}")</div>
+        </div>
+        <div class="prompt-tip">
+          <i data-lucide="info" style="width:12px;height:12px;color:var(--color-primary)"></i>
+          Документация: docs.perplexity.ai/docs/agent-api. Получи API ключ в Settings → API.
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="status-section">
+        <div class="status-section-header">
+          <span class="section-title">Статус тестирования</span>
+          <div class="status-select" id="status-api">
+            <button class="status-btn selected-todo" onclick="setStatus('api','todo',this)">⬜ Не начато</button>
+            <button class="status-btn" onclick="setStatus('api','partial',this)">🔶 В процессе</button>
+            <button class="status-btn" onclick="setStatus('api','done',this)">✅ Готово</button>
+          </div>
+        </div>
+        <div class="checklist">
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'ap1')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Получил API ключ в Settings → API</span></label>
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'ap2')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Сделал первый запрос через curl или Python</span></label>
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'ap3')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Попробовал sonar-deep-research через Agent API</span></label>
+          <label class="check-item"><input type="checkbox" onchange="saveCheck(this,'ap4')"><span class="check-box"><i data-lucide="check" style="width:10px;height:10px;color:white;display:none" class="check-icon"></i></span><span class="check-label">Проверил usage stats (num_search_queries, tokens)</span></label>
+        </div>
+        <div style="margin-top:var(--space-4)">
+          <div class="prompt-label" style="margin-bottom:var(--space-2)">Заметки</div>
+          <textarea class="notes-area" id="notes-api" placeholder="Latency, token cost, что автоматизировал..." onchange="saveNote('api',this.value)"></textarea>
+        </div>
+      </div>
+    </div>
+
+  </main>
 </div>
+
+<script>
+// ═══ STATE ═══
+const TOOLS = ['search-modes','deep-research','reasoning','labs','image-gen','file-upload','mcp','spaces','comet','api'];
+// Wait, spaces is also a tool. Let me count: search-modes, deep-research, reasoning, labs, image-gen, file-upload, mcp, spaces, comet, api = 10 but sidebar says 9
+// Actually sidebar has: search-modes, deep-research, reasoning, labs, image-gen, file-upload, mcp, spaces, comet, api = 10
+const ALL_TOOLS = ['search-modes','deep-research','reasoning','labs','image-gen','file-upload','mcp','spaces','comet','api'];
+let state = { statuses: {}, notes: {}, checks: {} };
+ALL_TOOLS.forEach(t => state.statuses[t] = 'todo');
+
+function saveState() {
+  try { window._appState = JSON.stringify(state); } catch(e){}
+}
+
+function loadState() {
+  try {
+    if (window._appState) { state = JSON.parse(window._appState); return true; }
+  } catch(e){}
+  return false;
+}
+
+// ═══ NAVIGATION ═══
+const titles = {
+  'overview': 'Обзор',
+  'search-modes': 'Search Modes',
+  'deep-research': 'Deep Research',
+  'reasoning': 'Reasoning Models',
+  'labs': 'Labs — Create',
+  'image-gen': 'Image Generation',
+  'file-upload': 'File Upload',
+  'mcp': 'MCP Servers',
+  'spaces': 'Spaces',
+  'comet': 'Comet Browser',
+  'api': 'Agent API'
+};
+
+function navigate(view) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('view-' + view)?.classList.add('active');
+  document.querySelector(`[data-view="${view}"]`)?.classList.add('active');
+  document.getElementById('topbar-title').textContent = titles[view] || view;
+  window.scrollTo(0, 0);
+}
+
+// ═══ STATUS ═══
+function setStatus(tool, status, btn) {
+  state.statuses[tool] = status;
+  saveState();
+  updateStatusButtons(tool, status);
+  updateStatusDot(tool, status);
+  updateStats();
+  updateProgress();
+}
+
+function updateStatusButtons(tool, status) {
+  const container = document.getElementById('status-' + tool);
+  if (!container) return;
+  container.querySelectorAll('.status-btn').forEach(b => {
+    b.classList.remove('selected-todo', 'selected-partial', 'selected-done');
+  });
+  const btns = container.querySelectorAll('.status-btn');
+  if (status === 'todo' && btns[0]) btns[0].classList.add('selected-todo');
+  if (status === 'partial' && btns[1]) btns[1].classList.add('selected-partial');
+  if (status === 'done' && btns[2]) btns[2].classList.add('selected-done');
+}
+
+function updateStatusDot(tool, status) {
+  const dot = document.getElementById('st-' + tool);
+  if (!dot) return;
+  dot.className = 'nav-status';
+  if (status === 'done') dot.classList.add('status-done');
+  else if (status === 'partial') dot.classList.add('status-partial');
+  else dot.classList.add('status-todo');
+}
+
+function updateStats() {
+  let done = 0, partial = 0, todo = 0;
+  ALL_TOOLS.forEach(t => {
+    const s = state.statuses[t];
+    if (s === 'done') done++;
+    else if (s === 'partial') partial++;
+    else todo++;
+  });
+  document.getElementById('stat-done').textContent = done;
+  document.getElementById('stat-partial').textContent = partial;
+  document.getElementById('stat-todo').textContent = todo;
+}
+
+function updateProgress() {
+  const done = ALL_TOOLS.filter(t => state.statuses[t] === 'done').length;
+  const pct = Math.round((done / ALL_TOOLS.length) * 100);
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-count').textContent = done + ' / ' + ALL_TOOLS.length;
+}
+
+// ═══ NOTES ═══
+function saveNote(tool, value) {
+  state.notes[tool] = value;
+  saveState();
+}
+
+// ═══ CHECKLIST ═══
+function saveCheck(input, key) {
+  state.checks[key] = input.checked;
+  saveState();
+  const icon = input.closest('.check-item')?.querySelector('.check-icon');
+  if (icon) icon.style.display = input.checked ? 'block' : 'none';
+}
+
+// ═══ COPY PROMPT ═══
+function copyPrompt(btn) {
+  const text = btn.closest('.prompt-block')?.querySelector('.prompt-text')?.textContent;
+  if (!text) return;
+  navigator.clipboard.writeText(text.trim()).then(() => {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Скопировано';
+    btn.style.color = 'var(--color-success)';
+    setTimeout(() => { btn.innerHTML = orig; btn.style.color = ''; }, 1500);
+  });
+}
+
+// ═══ EXPORT ═══
+function exportNotes() {
+  const lines = ['# Perplexity Max — Tool Tests\n', `Экспорт: ${new Date().toLocaleDateString('ru-RU')}\n`];
+  ALL_TOOLS.forEach(t => {
+    const status = state.statuses[t] || 'todo';
+    const emoji = status === 'done' ? '✅' : status === 'partial' ? '🔶' : '⬜';
+    lines.push(`\n## ${emoji} ${titles[t] || t}`);
+    const note = state.notes[t];
+    if (note) lines.push(`\n${note}`);
+    else lines.push('\n_Нет заметок_');
+  });
+  const blob = new Blob([lines.join('\n')], { type: 'text/markdown' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'tool-tests-notes.md';
+  a.click();
+}
+
+// ═══ RESET ═══
+function resetAll() {
+  if (!confirm('Сбросить весь прогресс?')) return;
+  state = { statuses: {}, notes: {}, checks: {} };
+  ALL_TOOLS.forEach(t => state.statuses[t] = 'todo');
+  restoreUI();
+}
+
+function restoreUI() {
+  ALL_TOOLS.forEach(t => {
+    updateStatusButtons(t, state.statuses[t] || 'todo');
+    updateStatusDot(t, state.statuses[t] || 'todo');
+    const noteEl = document.getElementById('notes-' + t);
+    if (noteEl) noteEl.value = state.notes[t] || '';
+  });
+  document.querySelectorAll('.check-item input[type="checkbox"]').forEach(cb => {
+    const key = cb.getAttribute('onchange')?.match(/'(\w+)'/)?.[1];
+    if (key) {
+      cb.checked = !!state.checks[key];
+      const icon = cb.closest('.check-item')?.querySelector('.check-icon');
+      if (icon) icon.style.display = cb.checked ? 'block' : 'none';
+    }
+  });
+  updateStats();
+  updateProgress();
+}
+
+// ═══ THEME ═══
+(function(){
+  const t = document.querySelector('[data-theme-toggle]');
+  const r = document.documentElement;
+  let d = r.getAttribute('data-theme') || 'dark';
+  t && t.addEventListener('click', () => {
+    d = d === 'dark' ? 'light' : 'dark';
+    r.setAttribute('data-theme', d);
+    t.innerHTML = d === 'dark'
+      ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>'
+      : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>';
+  });
+})();
+
+// ═══ INIT ═══
+document.addEventListener('DOMContentLoaded', () => {
+  lucide.createIcons();
+  restoreUI();
+});
+</script>
 </body>
 </html>
